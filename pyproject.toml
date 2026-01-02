@@ -1,0 +1,17 @@
+[project]
+name = "jcbt-seeing-analysis"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "astropy>=7.2.0",
+    "matplotlib>=3.10.8",
+    "numpy>=2.4.0",
+    "pandas>=2.3.3",
+    "photutils>=2.3.0",
+    "pyds9>=1.8.1",
+    "pyraf>=2.2.3",
+    "scipy>=1.16.3",
+    "sep>=1.4.1",
+]
