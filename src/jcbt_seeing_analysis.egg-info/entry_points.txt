@@ -1,0 +1,3 @@
+[console_scripts]
+jcbt-monitor = jcbt_analysis.core:main
+jcbt-plot = jcbt_analysis.plotter:main

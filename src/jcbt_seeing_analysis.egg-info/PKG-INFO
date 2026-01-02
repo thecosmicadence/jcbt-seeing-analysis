@@ -1,0 +1,36 @@
+Metadata-Version: 2.4
+Name: jcbt-seeing-analysis
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: astropy>=7.2.0
+Requires-Dist: matplotlib>=3.10.8
+Requires-Dist: numpy>=2.4.0
+Requires-Dist: pandas>=2.3.3
+Requires-Dist: photutils>=2.3.0
+Requires-Dist: pyds9>=1.8.1
+Requires-Dist: pyraf>=2.2.3
+Requires-Dist: scipy>=1.16.3
+Requires-Dist: sep>=1.4.1
+Dynamic: license-file
+
+## Instructions
+- Make sure that open-ssh server is installed in your PC before proceeding.
+- On your Windows PC, right click on the folder to be shared. Go to Properties->Sharing->Advanced Sharing and check the 'Share this folder' option. Click Apply->OK. 
+- Mount the source folder using the following command, before running the code:
+
+--> sudo mount -t cifs //(IP address of the server)/(Folder name that has been shared) /(path)/(to)/(mount)/in/your/pc -o username=$Winuser,password=$Winpass.
+
+- Replace $Winuser and $Winpass with the correspoding username and password of the Windows PC.
+
+- To unmount the folder:
+
+--> sudo umount /(path)/(to)/(mount)/in/your/pc
+
+- To get the live plot, run plot_fwhm.py on a separate terminal.
+
+
+### This is a collaborative effort of the Resaerch Trainees of Vainu Bappu Observatory.
+

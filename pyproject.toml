@@ -15,3 +15,6 @@ dependencies = [
     "scipy>=1.16.3",
     "sep>=1.4.1",
 ]
+[project.scripts]
+jcbt-monitor = "jcbt_analysis.core:main"
+jcbt-plot = "jcbt_analysis.plotter:main"
