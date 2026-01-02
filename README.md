@@ -7,6 +7,10 @@
 
 - Replace $Winuser and $Winpass with the correspoding username and password of the Windows PC.
 
+If you don't have /mnt/telescope_remote, then create it using:
+
+sudo mkdir -p /mnt/telescope_remote
+
 - To unmount the folder:
 
 --> sudo umount /(path)/(to)/(mount)/in/your/pc
