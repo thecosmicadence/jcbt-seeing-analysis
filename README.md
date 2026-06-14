@@ -180,111 +180,131 @@ The container uses `--network host` (Linux), so it shares your host's network st
 
 # JCBT Seeing Analysis Pipeline
 
-A Python-based pipeline for real-time seeing analysis and FWHM measurement at the Vainu Bappu Observatory (VBO). This tool automates data retrieval from a remote Windows server to a local Linux client, handles file conversion (SPE to FITS), and generates live plots.
+A Python-based pipeline for real-time seeing analysis and FWHM measurement at the Vainu Bappu Observatory (VBO). This tool automates data retrieval from a remote server, handles file conversion (SPE → FITS), and logs FWHM results to a CSV for live monitoring.
 
 ## Prerequisites
 
-* **Server (Data Source):** Windows PC with the source folder containing `.fits` or `.spe` files.
-* **Client (Analysis):** Linux PC (e.g., Fedora/Ubuntu).
-* **Software:**
-    * cifs-utils (must be installed and running on the Linux PC).
-    * `uv` (Python package manager) installed on the Linux client.
+* **Server (Data Source):** A machine (Windows or Linux) with the source folder containing `.fits` or `.spe` files.
+    * **Windows** — Enable folder sharing (SMB). The pipeline connects via SMB (port 445/139).
+    * **Linux** — Enable SSH access (port 22). The pipeline connects via SFTP.
+* **Client (Analysis):** Linux PC (e.g., Fedora/Ubuntu) or Docker (see above).
+* **Software (native setup, without Docker):**
+    * Python 3.11
+    * IRAF v2.17 + PyRAF
+    * SAOImage DS9 (must be running before launching the pipeline)
+    * XPA tools (`xpa-tools` package)
+
+> **Tip:** The Docker setup (documented above) bundles all of these automatically. Use native setup only if you have IRAF already installed on your system.
 
 ---
 
-## 1. Network & File Sharing Setup
+## 1. Server Setup
 
-Before running the scripts, the data folder on the Windows machine must be mounted on the Linux client.
+The pipeline connects to your data server **over the network using Python** (`pysmb` for Windows, `paramiko` for Linux). No manual CIFS mount or `cifs-utils` is required.
 
-### Step 1: Configure Windows Sharing
-1.  On the **Windows PC**, right-click the folder you wish to share.
-2.  Navigate to **Properties** -> **Sharing** -> **Advanced Sharing**.
-3.  Check the **Share this folder** option.
-4.  Click **Apply** -> **OK**.
-5.  *Note:* To find the IP address of the Windows machine, open Command Prompt (`cmd`) and run `ipconfig`.
+### Windows Server
+1. Right-click the data folder → **Properties** → **Sharing** → **Advanced Sharing**.
+2. Check **Share this folder** → **Apply** → **OK**.
+3. Note the server's IP address (run `ipconfig` in Command Prompt).
 
-### Step 2: Mount Folder on Linux
-On your **Linux PC**, create the mount point (if it does not already exist):
+### Linux Server
+1. Ensure the SSH server is running: `sudo systemctl status sshd`
+2. Note the server's IP address (run `ip a` or `hostname -I`).
 
-```bash
-sudo mkdir -p /mnt/telescope_remote
-```
-Mount the shared Windows folder using the `cifs` protocol:
-```bash
-sudo mount -t cifs //(Windows_IP)/(Shared_Folder_Name) /mnt/telescope_remote -o username=WIN_USER,password=WIN_PASS
-```
-- Replace `(Windows_IP)` and `(Shared_Folder_Name)` with your specific details.
-- Replace `WIN_USER` and `WIN_PASS` with the Windows account credentials.
+> The pipeline auto-detects whether the server is Windows (SMB) or Linux (SSH) by probing ports 445 and 22.
 
-**To unmount the folder later:**
-```bash
-sudo umount /mnt/telescope_remote
-```
 ---
-## 2. Installation & Environment
-This project uses `uv` for high-performance dependency management.
 
-### Step 1: Verify uv Installation
-Ensure `uv` is installed on your Linux machine:
+## 2. Installation (Native)
 
-```bash
-uv --version
-```
-
-### Step 2: Initialize Project
-
-If setting up the project for the first time:
+### Step 1: Clone the repository
 
 ```bash
-# Create and enter the project directory
-mkdir jcbt-seeing-analysis
+git clone https://github.com/thecosmicadence/jcbt-seeing-analysis.git
 cd jcbt-seeing-analysis
-
-# Initialize uv and pin Python version
-uv init
-uv python pin 3.11  # Uses Python 3.11
-
-# Create virtual environment
-uv venv
 ```
-### Step 3: Install Dependencies
 
-Add required modules (e.g., `astropy`, `matplotlib`, `numpy`) using:
+### Step 2: Create a virtual environment
 
 ```bash
-uv add module_name1 module_name2
-```
-### Step 4: Activate Environment
-
-Before running any scripts, activate the virtual environment:
-
-```bash
+python3.11 -m venv .venv
 source .venv/bin/activate
 ```
 
+### Step 3: Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Step 4: Configure
+
+Edit `config.py` to match your setup:
+
+```python
+LOCAL_BASE_DIR = "/path/to/local/data"   # Where downloaded files are saved
+SLEEP_INTERVAL = 3                        # Seconds between remote folder checks
+PIXEL_SCALE = 0.257                       # Arcsec/pixel for your instrument
+```
+
+---
+
 ## 3. Usage
 
-This repository contains two versions of the analysis pipeline depending on the input file format available on the server.
+### Running the Pipeline
 
-**Select the Correct Version**
-| Version | Input Format | Description |
-| :--- | :--- | :--- |
-| **Version 1 (v1)** | `.fits` | Use this when the server directory already contains pre-processed FITS files. |
-| **Version 2 (v2)** | `.spe` | Use this when the server contains raw `.spe` files. This script handles SPE-to-FITS conversion automatically. |
-
-**Running the Analysis**
-
-Run the appropriate Python script for your data type:
-```bash
-python3 <script_name>.py
-```
-**Live Plotting**
-
-To visualize the Full Width at Half Maximum (FWHM) in real-time, open a separate terminal, activate the environment, and run:
+1. **Start DS9** on your machine.
+2. Activate the virtual environment and run:
 
 ```bash
-python3 plot_fwhm_v1.py
+source .venv/bin/activate
+python3 jcbt_seeing_analysis.py
 ```
+
+3. The script will interactively prompt you for:
+    - **Server IP** address
+    - **Credentials** (Windows username/password or Linux SSH credentials)
+    - **Network share** selection (Windows only)
+    - **Remote folder** to monitor (interactive browser)
+
+4. The pipeline then enters a **watch loop** — it polls the remote folder for new files, downloads them, and for each file:
+    - Converts `.spe` → `.fits` if needed (prompts for a FOCUS value)
+    - Copies `.fits` files directly
+    - Displays the image in DS9
+    - Detects sources and measures FWHM using IRAF `psfmeasure`
+    - Launches `imexam` for manual inspection
+    - Appends results to `live_fwhm_data.csv`
+
+### Output
+
+Results are saved to `live_fwhm_data.csv` inside the local data directory with the following columns:
+
+| Column | Description |
+| :--- | :--- |
+| `FILENAME` | Name of the processed FITS file |
+| `FOCUS` | Focus value (for SPE conversions, otherwise `N/A`) |
+| `ELLIPTICITY` | Average source ellipticity |
+| `FWHM_PIX` | Average FWHM in pixels |
+| `FWHM_ARCSEC` | Average FWHM in arcseconds (`FWHM_PIX × PIXEL_SCALE`) |
+| `N_STARS` | Number of stars used in the measurement |
+
+---
+
+## Project Structure
+
+```
+jcbt-seeing-analysis/
+├── jcbt_seeing_analysis.py   # Main pipeline script
+├── smb_utils.py              # SMB/SSH connection, share browsing, folder navigation
+├── analysis_utils.py         # SPE reader, source detection helpers, IRAF output parser
+├── config.py                 # User-editable configuration (paths, pixel scale, timing)
+├── requirements.txt          # Python dependencies (pip)
+├── Dockerfile                # Containerized setup with IRAF + PyRAF + DS9
+├── .dockerignore             # Files excluded from Docker build context
+└── README.md
+```
+
+---
 
 # Credits
 
