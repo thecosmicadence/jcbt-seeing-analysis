@@ -1,0 +1,16 @@
+# Ignore data files, caches, and OS artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.fits
+*.spe
+*.csv
+.git/
+.gitignore
+pyraf/
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+*.log

@@ -1,0 +1,31 @@
+# --- Python Basics ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual Environments (uv) ---
+# It is standard to ignore the environment folder itself
+.venv/
+venv/
+env/
+
+# --- Astronomical Data & Large Files ---
+# Never commit large data files to GitHub!
+*.fits
+*.spe
+*.csv
+*.dat
+data/
+
+# --- OS System Files ---
+.DS_Store
+Thumbs.db
+
+# --- Logs & Temporary Files ---
+*.log
+*.tmp
+temp/
+
+# --- IDE Settings (Optional but recommended) ---
+.vscode/
+.idea/
