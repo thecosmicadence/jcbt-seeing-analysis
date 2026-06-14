@@ -1,4 +1,4 @@
 # --- LOCAL CONFIGURATION ---
-LOCAL_BASE_DIR = "/home/luciferat022" 
+LOCAL_BASE_DIR = "/data" 
 SLEEP_INTERVAL = 3
 PIXEL_SCALE = 0.257

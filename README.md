@@ -1,3 +1,119 @@
+# JCBT Seeing Analysis — Docker Setup
+
+## Prerequisites
+
+- **Docker / Podman** installed and running
+- **X11** display server (standard on Linux desktops)
+- **SAOImage DS9** must be running on your **host** machine before launching the container, since the container connects to it via X11 forwarding.
+
+## Quick Start
+
+### 1. Build the image
+
+```bash
+cd /path/to/jcbt-seeing-analysis
+docker build -t jcbt-seeing .
+```
+
+> **Note:** The first build takes ~10-15 minutes (downloads Ubuntu packages, IRAF, Python 3.11, and pip dependencies). Subsequent builds use Docker layer cache and are fast.
+
+### 2. Run the container
+
+#### Fedora / Podman (recommended for your setup)
+
+```bash
+# Allow your user to share X11 display with the container
+xhost +SI:localuser:$USER
+
+# Create the local directory for downloaded data (Podman won't auto-create it)
+mkdir -p ~/seeing_data
+
+# Run the pipeline interactively
+podman run --rm -it \
+  -e DISPLAY=$DISPLAY \
+  --security-opt label=disable \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -v ~/seeing_data:/data \
+  --network host \
+  jcbt-seeing
+```
+
+#### Docker (other Linux distros)
+
+```bash
+xhost +local:docker
+
+mkdir -p ~/seeing_data
+
+docker run --rm -it \
+  -e DISPLAY=$DISPLAY \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -v ~/seeing_data:/data \
+  --network host \
+  jcbt-seeing
+```
+
+The `-v ~/seeing_data:/data` mount maps a directory on your host to `/data` inside the container. Downloaded FITS/SPE files and `live_fwhm_data.csv` will appear in `~/seeing_data/` on your host and persist after the container exits.
+
+> **⚠️ Important:** Podman does **not** auto-create host directories. You must `mkdir` before running. The volume mount must have both host and container paths separated by `:` — writing `-v /path/to/data` alone won't work.
+
+### 3. After you're done
+
+```bash
+# Revoke X11 access (optional, for security)
+xhost -SI:localuser:$USER   # Podman
+xhost -local:docker          # Docker
+```
+
+## Volume Mounts
+
+| Host Path | Container Path | Purpose |
+|-----------|---------------|---------|
+| `~/seeing_data` | `/data` | Local storage for downloaded FITS/SPE files and results CSV |
+| `/tmp/.X11-unix` | `/tmp/.X11-unix` | X11 socket for DS9 GUI forwarding |
+
+## Configuration
+
+`config.py` inside the container has `LOCAL_BASE_DIR = "/data"`, which maps to whatever host directory you mount with `-v`. No changes needed for the default setup.
+
+If you want to use a custom config (e.g. different `PIXEL_SCALE` or `SLEEP_INTERVAL`), mount it at runtime:
+```bash
+podman run --rm -it \
+  -e DISPLAY=$DISPLAY \
+  --security-opt label=disable \
+  -v /tmp/.X11-unix:/tmp/.X11-unix \
+  -v ~/seeing_data:/data \
+  -v /path/to/custom/config.py:/app/config.py \
+  --network host \
+  jcbt-seeing
+```
+
+## Troubleshooting
+
+### DS9 won't open / "Please open DS9 first!"
+DS9 must be running on your **host** machine. The container connects to the host's DS9 via XPA over the shared X11 socket. Start DS9 on the host before running the container.
+
+### "could not open XWindow display" (Podman/Fedora)
+This is usually caused by SELinux blocking X11 socket access. Make sure you:
+1. Ran `xhost +SI:localuser:$USER` before starting the container
+2. Used `--security-opt label=disable` in the run command
+3. Have `$DISPLAY` set correctly (check with `echo $DISPLAY`, usually `:0` or `:1`)
+
+### "Undefined environment variable `USER'" (PyRAF)
+This is fixed in the current Dockerfile (`ENV USER=observer`). If you still see it, rebuild the image.
+
+### IRAF tasks fail with "No such file" errors
+This usually means the IRAF binary symlinks are missing. The Dockerfile handles this, but if you see issues, verify inside the container:
+```bash
+ls -la /usr/lib/iraf/bin.linux64
+ls -la /usr/lib/iraf/noao/bin.linux64
+```
+
+### Network connection to SMB/SSH server fails
+The container uses `--network host`, so it shares your host's network stack. If the remote server is reachable from your host, it should be reachable from the container too.
+
+---
+
 # JCBT Seeing Analysis Pipeline
 
 A Python-based pipeline for real-time seeing analysis and FWHM measurement at the Vainu Bappu Observatory (VBO). This tool automates data retrieval from a remote Windows server to a local Linux client, handles file conversion (SPE to FITS), and generates live plots.

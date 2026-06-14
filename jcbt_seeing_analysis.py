@@ -177,7 +177,7 @@ def main():
 
                         # --- DISPLAY & ANALYZE ---
                         d.set(f'file "{local_fits_path}"')
-                        d.set('scale', 'zscale')
+                        d.set('scale zscale')
                         time.sleep(1) 
 
                         with pyfits.open(local_fits_path) as hdul:
@@ -210,10 +210,11 @@ def main():
                         source_table['y'] = sources_xy[:, 1] + 1
                         source_table['flux'] = fluxes
 
-                        source_table1 = source_table[source_table['flux'] < 100000]
-                        brightest_15 = source_table1[np.argsort(source_table1['flux'])[::-1][:15]]
+                        source_table1 = source_table[source_table['flux'] < 60000]   # Can be replaced with 2^(BITPIX)-1
+                        #brightest_15 = source_table1[np.argsort(source_table1['flux'])[::-1][:15]]
+                        all_valid_stars = source_table1[np.argsort(source_table1['flux'])[::-1]]
 
-                        save_brightest_as_coo(brightest_15, filename=TEMP_COO_FILE)
+                        save_brightest_as_coo(all_valid_stars, filename=TEMP_COO_FILE)
                         
                         results = capture_iraf_output(
                             iraf.psfmeasure, 
@@ -225,7 +226,7 @@ def main():
                             coords="markall",       
                             imagecur=TEMP_COO_FILE, 
                         )
-                        d.set('scale', 'zscale')
+                        d.set('scale zscale')
 
                         if results:
                             print(f" -> Measured FWHM: {results['average_fwhm_pixels']:.2f} px")

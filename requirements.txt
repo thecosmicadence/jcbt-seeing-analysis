@@ -1,0 +1,36 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# requirements.txt — JCBT Seeing Analysis Pipeline
+# Python 3.11 (deadsnakes PPA on Ubuntu 22.04)
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Core astronomy
+astropy==7.2.0
+astropy-iers-data==0.2025.12.22.0.40.30
+
+# Numerical / scientific
+numpy==1.26.4
+scipy==1.16.3
+
+# IRAF Python interface
+pyraf==2.2.3
+configobj==5.0.9
+
+# DS9 display / XPA
+pyds9==1.8.1
+
+# Source extraction
+sep==1.4.1
+
+# Data handling
+pandas==2.3.3
+
+# File transfer utilities (SMB + SSH)
+paramiko==4.0.0
+pysmb==1.2.13
+bcrypt==5.0.0
+cryptography==46.0.5
+pynacl==1.6.2
+cffi==2.0.0
+
+# Misc
+six==1.17.0
